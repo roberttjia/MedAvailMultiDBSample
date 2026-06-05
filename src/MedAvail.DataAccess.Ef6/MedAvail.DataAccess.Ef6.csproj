@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <!-- EF6's SqlProviderServices requires System.Data.SqlClient by design;
+         suppress the "use Microsoft.Data.SqlClient" obsolete warning here. -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- EF6 6.3+ targets .NET Standard 2.1, so 6.5.x runs cross-platform on .NET 8 -->
+    <PackageReference Include="EntityFramework" Version="6.5.1" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <!-- EF6's built-in SqlProviderServices is wired to System.Data.SqlClient;
+         it must be referenced and registered via a DbConfiguration on .NET 8 -->
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MedAvail.Common\MedAvail.Common.csproj" />
+  </ItemGroup>
+
+</Project>

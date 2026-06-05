@@ -1,0 +1,26 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+
+# Rider / VS
+.idea/
+.vs/
+
+# Secrets — never commit real connection strings / credentials
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+*.env
+
+# Test result reports
+test-results/
+**/test-results-*.json
+**/test-results-*.log
+
+# NuGet
+*.nupkg
+packages/
