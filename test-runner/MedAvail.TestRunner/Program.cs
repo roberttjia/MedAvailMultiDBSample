@@ -59,6 +59,12 @@ internal static class Program
         // --- EF Core tests: CRUD, queries, keyless entity, rowversion concurrency ---
         new EfCoreTests(connections).RegisterAll(harness);
 
+        // --- EF Core schema-conversion coverage for MedAvailDB (Core): 10 tables + 2 views ---
+        new EfCoreCoreCoverageTests(connections).RegisterAll(harness);
+
+        // --- Result-set stored proc (refcursor-signature candidate) across all 3 technologies ---
+        new ResultSetProcTests(connections).RegisterAll(harness);
+
         // --- EF6 tests (EntityFramework 6.5.x on .NET 8): CRUD, queries, concurrency ---
         new Ef6Tests(connections).RegisterAll(harness);
 
