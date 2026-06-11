@@ -19,7 +19,6 @@ secrets.json
 # Test result reports
 test-results/
 **/test-results-*.json
-**/test-results-*.log
 
 # NuGet
 *.nupkg

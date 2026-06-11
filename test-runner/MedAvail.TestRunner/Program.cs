@@ -53,11 +53,17 @@ internal static class Program
         // --- ADO.NET tests: CRUD, queries, stored procedures ---
         new AdoTests(connections).RegisterAll(harness);
 
+        // --- ADO.NET schema-conversion coverage for MedAvailDB (Core): 10 tables + 2 views ---
+        new AdoCoreCoverageTests(connections).RegisterAll(harness);
+
         // --- EF Core tests: CRUD, queries, keyless entity, rowversion concurrency ---
         new EfCoreTests(connections).RegisterAll(harness);
 
         // --- EF6 tests (EntityFramework 6.5.x on .NET 8): CRUD, queries, concurrency ---
         new Ef6Tests(connections).RegisterAll(harness);
+
+        // --- EF6 schema-conversion coverage for MedAvailDB (Core): 10 tables + 2 views ---
+        new Ef6CoreCoverageTests(connections).RegisterAll(harness);
 
         // Results go to the repo root /test-results by default; override with --output <dir>.
         var outputOverride = GetOption(args, "--output");

@@ -26,6 +26,13 @@ namespace MedAvail.DataAccess.Ef6
             return new PackageManagementEf6Context(connection, contextOwnsConnection: true);
         }
 
+        public Contexts.CoreEf6Context CreateCore()
+        {
+            var cs = _connections.GetConnectionString(MedAvailDatabase.Core);
+            var connection = new SqlConnection(AdaptForLegacyClient(cs));
+            return new Contexts.CoreEf6Context(connection, contextOwnsConnection: true);
+        }
+
         /// <summary>
         /// EF6 uses the legacy System.Data.SqlClient, which does not understand the
         /// modern "TrustServerCertificate" keyword (introduced in Microsoft.Data.SqlClient).
