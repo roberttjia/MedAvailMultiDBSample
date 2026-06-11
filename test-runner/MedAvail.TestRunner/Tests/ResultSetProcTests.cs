@@ -44,6 +44,15 @@ public sealed class ResultSetProcTests
             Assert.True(info.RowCount >= 0, "row count should be non-negative");
         });
 
+        harness.Run("GenerateMockPackageMovementXML via DataTable", cat, "Ado", () =>
+        {
+            // Classic disconnected ADO.NET path: SqlDataAdapter.Fill -> DataTable.
+            var info = ado.GenerateMockPackageMovementDataTable(serial);
+            Assert.True(info.ReturnedResultSet, "DataTable fill should produce a table");
+            Assert.True(info.FieldCount >= 1, "DataTable should expose at least one column");
+            Assert.True(info.RowCount >= 0, "row count should be non-negative");
+        });
+
         harness.Run("GenerateMockPackageMovementXML returns result set", cat, "EfCore", () =>
         {
             var repo = new EfCoreResultSetProcRepository(new EfCoreContextFactory(_connections));

@@ -40,6 +40,33 @@ namespace MedAvail.DataAccess.Ado
             return info;
         }
 
+        /// <summary>
+        /// Same proc, but materialized into a DataTable via SqlDataAdapter.Fill
+        /// (the classic disconnected ADO.NET pattern) instead of a SqlDataReader.
+        /// </summary>
+        public StoredProcResultInfo GenerateMockPackageMovementDataTable(string medCenterSerialNumber,
+            int packagesPerLoadSlot = 1)
+        {
+            using var conn = OpenConnection();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "dbo.GenerateMockPackageMovementXML";
+            cmd.CommandTimeout = 60;
+            cmd.Parameters.Add(Param("@MedCenterSerialNumber", SqlDbType.VarChar, medCenterSerialNumber));
+            cmd.Parameters.Add(Param("@NumberOfPackagesPerLoadSlot", SqlDbType.Int, packagesPerLoadSlot));
+
+            var table = new DataTable();
+            using var adapter = new SqlDataAdapter(cmd);
+            adapter.Fill(table);
+
+            return new StoredProcResultInfo
+            {
+                ReturnedResultSet = true,     // Fill always produces a table
+                FieldCount = table.Columns.Count,
+                RowCount = table.Rows.Count
+            };
+        }
+
         /// <summary>Returns any existing med center serial number, or null if none.</summary>
         public string? GetAnyMedCenterSerial()
         {
