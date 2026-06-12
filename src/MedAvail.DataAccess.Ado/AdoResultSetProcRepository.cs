@@ -67,6 +67,38 @@ namespace MedAvail.DataAccess.Ado
             };
         }
 
+        /// <summary>
+        /// Calls the proc via raw SQL (EXEC text) rather than
+        /// CommandType.StoredProcedure. On SQL Server this returns the result set
+        /// directly. On PostgreSQL the converted procedure uses a REFCURSOR OUT
+        /// parameter, and because this call does NOT declare itself as a stored
+        /// procedure, Npgsql will not auto-dereference the cursor — the migrated
+        /// code must wrap the call in a transaction and FETCH from the refcursor
+        /// explicitly. This mirrors legacy code that builds SQL text or uses
+        /// helpers that never set CommandType.StoredProcedure.
+        /// </summary>
+        public StoredProcResultInfo GenerateMockPackageMovementExec(string medCenterSerialNumber,
+            int packagesPerLoadSlot = 1)
+        {
+            using var conn = OpenConnection();
+            using var cmd = conn.CreateCommand();
+            // Note: CommandType stays Text (the default) — deliberately not StoredProcedure.
+            cmd.CommandText =
+                "EXEC dbo.GenerateMockPackageMovementXML @MedCenterSerialNumber, @NumberOfPackagesPerLoadSlot;";
+            cmd.CommandTimeout = 60;
+            cmd.Parameters.Add(Param("@MedCenterSerialNumber", SqlDbType.VarChar, medCenterSerialNumber));
+            cmd.Parameters.Add(Param("@NumberOfPackagesPerLoadSlot", SqlDbType.Int, packagesPerLoadSlot));
+
+            using var reader = cmd.ExecuteReader();
+            var info = new StoredProcResultInfo
+            {
+                ReturnedResultSet = reader.HasRows,
+                FieldCount = reader.FieldCount
+            };
+            while (reader.Read()) info.RowCount++;
+            return info;
+        }
+
         /// <summary>Returns any existing med center serial number, or null if none.</summary>
         public string? GetAnyMedCenterSerial()
         {
