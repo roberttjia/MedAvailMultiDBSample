@@ -67,6 +67,7 @@ internal static class Program
 
         // --- Business-layer full-stack tests: runner -> service -> repository -> live DB ---
         new BusinessLayerTests(connections).RegisterAll(harness);
+        new BusinessLayerPackageIdMapTests(connections).RegisterAll(harness);
 
         // --- EF6 tests (EntityFramework 6.5.x on .NET 8): CRUD, queries, concurrency ---
         new Ef6Tests(connections).RegisterAll(harness);
