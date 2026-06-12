@@ -65,6 +65,9 @@ internal static class Program
         // --- Result-set stored proc (refcursor-signature candidate) across all 3 technologies ---
         new ResultSetProcTests(connections).RegisterAll(harness);
 
+        // --- Business-layer full-stack tests: runner -> service -> repository -> live DB ---
+        new BusinessLayerTests(connections).RegisterAll(harness);
+
         // --- EF6 tests (EntityFramework 6.5.x on .NET 8): CRUD, queries, concurrency ---
         new Ef6Tests(connections).RegisterAll(harness);
 
