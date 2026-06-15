@@ -5,8 +5,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace MedAvail.DataAccess.Ef6.Entities
 {
     /// <summary>
-    /// EF6 entity for dbo.package_definition (MedAvailPackageManagementDb).
-    /// AuditID_MA is the SQL Server rowversion, mapped as an EF6 concurrency token.
+    /// EF6 entity for package_definition (MedAvailPackageManagementDb).
+    /// auditid_ma is a BIGINT with a sequence default, emulating the former
+    /// SQL Server rowversion.
     /// </summary>
     [Table("package_definition")]
     public class PackageDefinitionEf6
@@ -48,17 +49,16 @@ namespace MedAvail.DataAccess.Ef6.Entities
         [Column("expiration_method")] public int? ExpirationMethod { get; set; }
         [Column("days_to_advised_expiration")] public int? DaysToAdvisedExpiration { get; set; }
         [Column("drug_schedule_id")] public int? DrugScheduleId { get; set; }
-        [Column("controlled_substance")] public bool ControlledSubstance { get; set; }
+        [Column("controlled_substance")] public decimal ControlledSubstance { get; set; }
         [Column("created_by")] public string CreatedBy { get; set; } = string.Empty;
         [Column("created_on")] public DateTime CreatedOn { get; set; }
         [Column("lot_code_source")] public int LotCodeSource { get; set; }
 
-        [Timestamp]
-        [Column("AuditID_MA")]
-        public byte[]? AuditId { get; set; }
+        [Column("auditid_ma")]
+        public long AuditId { get; set; }
 
         [Column("notes")] public string? Notes { get; set; }
         [Column("package_definition_type_id")] public int PackageDefinitionTypeId { get; set; }
-        [Column("is_demo_package")] public bool IsDemoPackage { get; set; }
+        [Column("is_demo_package")] public decimal IsDemoPackage { get; set; }
     }
 }

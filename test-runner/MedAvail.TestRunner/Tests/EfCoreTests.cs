@@ -10,7 +10,7 @@ using MedAvail.TestRunner.Harness;
 namespace MedAvail.TestRunner.Tests;
 
 /// <summary>
-/// EF Core tests: CRUD, queries, keyless-entity access, and the rowversion-based
+/// EF Core tests: CRUD, queries, keyless-entity access, and the auditid_ma-based
 /// optimistic concurrency that EF Core enforces natively (DbUpdateConcurrencyException).
 /// Self-seeding and re-runnable; created rows are left in place.
 /// </summary>
@@ -58,7 +58,7 @@ public sealed class EfCoreTests
             var row = repo.GetById(id);
             Assert.True(row is not null, "inserted row should be retrievable");
             Assert.Equal(marker, row!.ProductName, "product_name should round-trip");
-            Assert.True(row.AuditId is { Length: 8 }, "rowversion should be materialized as 8 bytes");
+            Assert.True(row.AuditId > 0, "auditid_ma should be a positive BIGINT");
         });
 
         harness.Run("GetRecent ordered descending", cat, "EfCore", () =>
@@ -229,13 +229,13 @@ public sealed class EfCoreTests
         });
     }
 
-    // ---- rowversion optimistic concurrency (EF Core native) ----
+    // ---- auditid_ma optimistic concurrency (EF Core native) ----
     private void RowVersionConcurrency(TestRunnerHarness harness)
     {
         const string cat = "TypeFidelity";
         var id = 0;
 
-        harness.Run("EF Core throws on stale rowversion", cat, "EfCore", () =>
+        harness.Run("EF Core throws on stale auditid_ma", cat, "EfCore", () =>
         {
             _seeder.EnsurePackageDefinitionLookups();
 
@@ -249,17 +249,17 @@ public sealed class EfCoreTests
             }
             Assert.True(id > 0, "should have inserted a row");
 
-            // Load the same row in two separate contexts (two copies, same rowversion).
+            // Load the same row in two separate contexts (two copies, same auditid_ma).
             using var ctxA = _factory.CreatePackageManagement();
             using var ctxB = _factory.CreatePackageManagement();
             var copyA = ctxA.PackageDefinitions.First(p => p.PackageDefinitionId == id);
             var copyB = ctxB.PackageDefinitions.First(p => p.PackageDefinitionId == id);
 
-            // First update succeeds and bumps the rowversion.
+            // First update succeeds and bumps the auditid_ma.
             copyA.Description = "ef-update-A";
             ctxA.SaveChanges();
 
-            // Second update uses the now-stale rowversion -> EF Core detects the conflict.
+            // Second update uses the now-stale auditid_ma -> EF Core detects the conflict.
             copyB.Description = "ef-update-B";
             var threw = false;
             try
@@ -270,7 +270,7 @@ public sealed class EfCoreTests
             {
                 threw = true;
             }
-            Assert.True(threw, "EF Core should throw DbUpdateConcurrencyException on a stale rowversion");
+            Assert.True(threw, "EF Core should throw DbUpdateConcurrencyException on a stale auditid_ma");
         });
     }
 
@@ -307,10 +307,10 @@ public sealed class EfCoreTests
         PackageSize = 1m,
         ChangedDate = DateTime.UtcNow,
         ChangedBy = "efcore-test",
-        ControlledSubstance = false,
+        ControlledSubstance = 0m,
         CreatedBy = "efcore-test",
         CreatedOn = DateTime.UtcNow,
-        IsDemoPackage = true
+        IsDemoPackage = 1m
     };
 
     private static PackageDefinitionEntity BuildEntity(string marker)

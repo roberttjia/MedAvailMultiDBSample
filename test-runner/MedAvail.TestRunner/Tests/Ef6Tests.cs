@@ -13,8 +13,8 @@ using MedAvail.TestRunner.Harness;
 namespace MedAvail.TestRunner.Tests;
 
 /// <summary>
-/// EF6 (EntityFramework 6.5.x, running cross-platform on .NET 8) tests: CRUD,
-/// queries, and rowversion-based optimistic concurrency (DbUpdateConcurrencyException).
+/// EF6 (EntityFramework6.Npgsql, running cross-platform on .NET 8) tests: CRUD,
+/// queries, and auditid_ma-based optimistic concurrency (DbUpdateConcurrencyException).
 /// Self-seeding and re-runnable; created rows are left in place.
 /// </summary>
 public sealed class Ef6Tests
@@ -58,7 +58,7 @@ public sealed class Ef6Tests
             var row = repo.GetById(id);
             Assert.True(row is not null, "inserted row should be retrievable");
             Assert.Equal(marker, row!.ProductName, "product_name should round-trip");
-            Assert.True(row.AuditId is { Length: 8 }, "rowversion should be 8 bytes");
+            Assert.True(row.AuditId > 0, "auditid_ma should be a positive BIGINT");
         });
 
         harness.Run("Delete package_definition", cat, "Ef6", () =>
@@ -132,7 +132,7 @@ public sealed class Ef6Tests
         const string cat = "TypeFidelity";
         var id = 0;
 
-        harness.Run("EF6 throws on stale rowversion", cat, "Ef6", () =>
+        harness.Run("EF6 throws on stale auditid_ma", cat, "Ef6", () =>
         {
             _seeder.EnsurePackageDefinitionLookups();
 
@@ -163,7 +163,7 @@ public sealed class Ef6Tests
             {
                 threw = true;
             }
-            Assert.True(threw, "EF6 should throw DbUpdateConcurrencyException on a stale rowversion");
+            Assert.True(threw, "EF6 should throw DbUpdateConcurrencyException on a stale auditid_ma");
         });
     }
 
@@ -200,10 +200,10 @@ public sealed class Ef6Tests
         PackageSize = 1m,
         ChangedDate = DateTime.UtcNow,
         ChangedBy = "ef6-test",
-        ControlledSubstance = false,
+        ControlledSubstance = 0m,
         CreatedBy = "ef6-test",
         CreatedOn = DateTime.UtcNow,
-        IsDemoPackage = true
+        IsDemoPackage = 1m
     };
 
     private static PackageDefinitionEf6 BuildEntity(string marker)

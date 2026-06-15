@@ -1,6 +1,7 @@
 using System;
 using System.Data;
-using Microsoft.Data.SqlClient;
+using Npgsql;
+using NpgsqlTypes;
 using MedAvail.Common;
 
 namespace MedAvail.DataAccess.Ado
@@ -11,8 +12,8 @@ namespace MedAvail.DataAccess.Ado
     /// and the container stored procedures have valid references.
     ///
     /// Lookup PKs are not identity columns, so we insert explicit ids. Every
-    /// insert is guarded by NOT EXISTS, so seeding is safe to run repeatedly and
-    /// never duplicates rows. Seed data is intentionally left in place.
+    /// insert is guarded by ON CONFLICT DO NOTHING, so seeding is safe to run
+    /// repeatedly and never duplicates rows. Seed data is intentionally left in place.
     /// </summary>
     public sealed class AdoPackageManagementSeeder : AdoRepositoryBase
     {
@@ -54,28 +55,26 @@ namespace MedAvail.DataAccess.Ado
             return SeedLookupId;
         }
 
-        private static void EnsureLookup(SqlConnection conn, string table, string idColumn)
+        private static void EnsureLookup(NpgsqlConnection conn, string table, string idColumn)
         {
             // alias is the only other NOT NULL column on these lookups.
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
-                $"IF NOT EXISTS (SELECT 1 FROM dbo.[{table}] WHERE [{idColumn}] = @id) " +
-                $"INSERT INTO dbo.[{table}] ([{idColumn}], [alias]) VALUES (@id, @alias);";
-            cmd.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = SeedLookupId });
-            cmd.Parameters.Add(new SqlParameter("@alias", SqlDbType.VarChar, 50) { Value = "seed" });
+                $"INSERT INTO {table} ({idColumn}, alias) VALUES (@id, @alias) ON CONFLICT ({idColumn}) DO NOTHING;";
+            cmd.Parameters.Add(new NpgsqlParameter("@id", NpgsqlDbType.Integer) { Value = SeedLookupId });
+            cmd.Parameters.Add(new NpgsqlParameter("@alias", NpgsqlDbType.Varchar) { Value = "seed" });
             cmd.ExecuteNonQuery();
         }
 
-        private static void EnsureDrugSchedule(SqlConnection conn)
+        private static void EnsureDrugSchedule(NpgsqlConnection conn)
         {
-            // lookup_drug_schedule has controlled_substance bit NOT NULL (no description).
+            // lookup_drug_schedule has controlled_substance numeric NOT NULL (no description).
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
-                "IF NOT EXISTS (SELECT 1 FROM dbo.lookup_drug_schedule WHERE drug_schedule_id = @id) " +
-                "INSERT INTO dbo.lookup_drug_schedule (drug_schedule_id, alias, controlled_substance) " +
-                "VALUES (@id, @alias, 0);";
-            cmd.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = SeedLookupId });
-            cmd.Parameters.Add(new SqlParameter("@alias", SqlDbType.VarChar, 256) { Value = "seed" });
+                "INSERT INTO lookup_drug_schedule (drug_schedule_id, alias, controlled_substance) " +
+                "VALUES (@id, @alias, 0) ON CONFLICT (drug_schedule_id) DO NOTHING;";
+            cmd.Parameters.Add(new NpgsqlParameter("@id", NpgsqlDbType.Integer) { Value = SeedLookupId });
+            cmd.Parameters.Add(new NpgsqlParameter("@alias", NpgsqlDbType.Varchar) { Value = "seed" });
             cmd.ExecuteNonQuery();
         }
     }

@@ -3,7 +3,7 @@ using System;
 namespace MedAvail.Common.Models
 {
     /// <summary>
-    /// Represents a dbo.container row in MedAvailPackageManagementDb. Created and
+    /// Represents a container row in MedAvailPackageManagementDb. Created and
     /// modified through the CreateContainer / ModifyContainer stored procedures,
     /// which return the affected row(s).
     /// </summary>

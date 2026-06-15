@@ -22,7 +22,7 @@ public sealed class EfCoreContextFactory
     public PackageManagementDbContext CreatePackageManagement()
     {
         var options = new DbContextOptionsBuilder<PackageManagementDbContext>()
-            .UseSqlServer(_connections.GetConnectionString(MedAvailDatabase.PackageManagement))
+            .UseNpgsql(_connections.GetConnectionString(MedAvailDatabase.PackageManagement))
             .Options;
         return new PackageManagementDbContext(options);
     }
@@ -30,7 +30,7 @@ public sealed class EfCoreContextFactory
     public CoreDbContext CreateCore()
     {
         var options = new DbContextOptionsBuilder<CoreDbContext>()
-            .UseSqlServer(_connections.GetConnectionString(MedAvailDatabase.Core))
+            .UseNpgsql(_connections.GetConnectionString(MedAvailDatabase.Core))
             .Options;
         return new CoreDbContext(options);
     }
@@ -38,7 +38,7 @@ public sealed class EfCoreContextFactory
     public DataAcquisitionDbContext CreateDataAcquisition()
     {
         var options = new DbContextOptionsBuilder<DataAcquisitionDbContext>()
-            .UseSqlServer(_connections.GetConnectionString(MedAvailDatabase.DataAcquisition))
+            .UseNpgsql(_connections.GetConnectionString(MedAvailDatabase.DataAcquisition))
             .Options;
         return new DataAcquisitionDbContext(options);
     }

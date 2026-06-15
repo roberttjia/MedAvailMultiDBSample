@@ -33,7 +33,7 @@ public class CoreDbContext : DbContext
         modelBuilder.Entity<PackageIdMapEntity>().HasNoKey().ToTable("package_id_map");
 
         // Views are keyless (already annotated [Keyless], reaffirm the table map).
-        modelBuilder.Entity<AllDuplicatePartsCore>().HasNoKey().ToView("AllDuplicateParts");
+        modelBuilder.Entity<AllDuplicatePartsCore>().HasNoKey().ToView("allduplicateparts");
         modelBuilder.Entity<BinStatsCore>().HasNoKey().ToView("bin_stats");
 
         base.OnModelCreating(modelBuilder);

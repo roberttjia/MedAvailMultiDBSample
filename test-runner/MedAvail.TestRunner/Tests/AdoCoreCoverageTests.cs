@@ -13,8 +13,8 @@ namespace MedAvail.TestRunner.Tests;
 /// PostgreSQL schema + code migration.
 ///
 /// Read-only and dependency-free: no seeding, works whether or not the object has
-/// rows. Tables/views were chosen for column-type diversity (bit, datetime,
-/// decimal, varbinary, int families, etc.).
+/// rows. Tables/views were chosen for column-type diversity (numeric, datetime,
+/// decimal, bytea, int families, etc.).
 /// </summary>
 public sealed class AdoCoreCoverageTests
 {
@@ -26,7 +26,7 @@ public sealed class AdoCoreCoverageTests
     private static readonly (string Name, string Kind, string ExpectedColumn)[] Objects =
     {
         ("medcenter",        "table", "medcenter_id"),
-        ("ResourceBinary",   "table", "resourceInfo_id"),
+        ("resourcebinary",   "table", "resourceinfo_id"),
         ("workflow_profile", "table", "workflow_type"),
         ("user",             "table", "user_id"),
         ("kiosk",            "table", "name"),
@@ -34,8 +34,8 @@ public sealed class AdoCoreCoverageTests
         ("legal_document",   "table", "legal_document_id"),
         ("language",         "table", "language_id"),
         ("part",             "table", "part_id"),
-        ("PatientProfile",   "table", "ExternalPatientId"),
-        ("AllDuplicateParts","view",  "part_id"),
+        ("patientprofile",   "table", "externalpatientid"),
+        ("allduplicateparts","view",  "part_id"),
         ("bin_stats",        "view",  "bin_definition_id"),
     };
 
@@ -62,7 +62,7 @@ public sealed class AdoCoreCoverageTests
                     $"all columns of '{name}' should report a data type");
 
                 // Sample read should not exceed what we asked for, and not exceed total.
-                Assert.True(result.SampleRowCount <= 5, "sample row count should respect TOP(5)");
+                Assert.True(result.SampleRowCount <= 5, "sample row count should respect LIMIT 5");
                 Assert.True(result.TotalRowCount >= result.SampleRowCount,
                     "total row count should be >= sampled rows");
             });

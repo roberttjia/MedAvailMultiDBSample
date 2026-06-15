@@ -1,7 +1,7 @@
 namespace MedAvail.Common.Models
 {
     /// <summary>
-    /// Represents a row of dbo.package_id_map. This table exists (by the same
+    /// Represents a row of package_id_map. This table exists (by the same
     /// name) in three of the four databases — Core, DataAcquisition and
     /// PackageManagement — which makes it the focal point for the
     /// entity-to-database association tests.

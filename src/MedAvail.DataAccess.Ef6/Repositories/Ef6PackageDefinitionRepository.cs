@@ -50,7 +50,6 @@ namespace MedAvail.DataAccess.Ef6.Repositories
             using var ctx = _factory.CreatePackageManagement();
             var e = ToEntity(definition);
             e.PackageDefinitionId = 0;
-            e.AuditId = null;
             ctx.PackageDefinitions.Add(e);
             ctx.SaveChanges();
             return e.PackageDefinitionId;

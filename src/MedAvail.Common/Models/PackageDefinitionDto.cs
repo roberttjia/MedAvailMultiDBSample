@@ -3,12 +3,15 @@ using System;
 namespace MedAvail.Common.Models
 {
     /// <summary>
-    /// Database-agnostic representation of dbo.package_definition
+    /// Database-agnostic representation of package_definition
     /// (MedAvailPackageManagementDb). Shared by all data-access implementations
     /// so the business layer never depends on a specific ORM's entity type.
     ///
     /// package_definition_id is IDENTITY (DB-generated).
-    /// AuditId is the SQL Server rowversion column AuditID_MA (DB-managed).
+    /// AuditId is the PostgreSQL BIGINT column auditid_ma (DB-managed via sequence + trigger).
+    /// Cap and Valid are bool in C# but stored as NUMERIC in PostgreSQL; the data-access
+    /// layer converts 0/1 ↔ false/true at the boundary.
+    /// ControlledSubstance and IsDemoPackage are decimal (NUMERIC in PostgreSQL).
     /// </summary>
     public sealed class PackageDefinitionDto
     {
@@ -20,7 +23,7 @@ namespace MedAvail.Common.Models
         public decimal PackageWidth { get; set; }               // package_width
         public decimal PackageLength { get; set; }              // package_length
         public int Shape { get; set; }                          // shape
-        public bool Cap { get; set; }                           // cap
+        public bool Cap { get; set; }                           // cap (NUMERIC in DB, bool in C#)
         public decimal CapDiameter { get; set; }                // cap_diameter
         public decimal CapLength { get; set; }                  // cap_length
         public decimal Weight { get; set; }                     // weight
@@ -29,7 +32,7 @@ namespace MedAvail.Common.Models
         public int LotCodeRelLocation { get; set; }             // lot_code_rel_location
         public int ExpiryAbsLocation { get; set; }              // expiry_abs_location
         public int ExpiryRelLocation { get; set; }              // expiry_rel_location
-        public bool Valid { get; set; }                         // valid
+        public bool Valid { get; set; }                         // valid (NUMERIC in DB, bool in C#)
         public int DefinitionStateId { get; set; }              // definition_state_id
         public string? DefinitionRejectReason { get; set; }     // definition_reject_reason (NULL)
         public int ProductCategoryId { get; set; }              // product_category_id
@@ -45,13 +48,13 @@ namespace MedAvail.Common.Models
         public int? ExpirationMethod { get; set; }              // expiration_method (NULL)
         public int? DaysToAdvisedExpiration { get; set; }       // days_to_advised_expiration (NULL)
         public int? DrugScheduleId { get; set; }                // drug_schedule_id (NULL)
-        public bool ControlledSubstance { get; set; }           // controlled_substance
+        public decimal ControlledSubstance { get; set; }        // controlled_substance (NUMERIC)
         public string CreatedBy { get; set; } = string.Empty;   // created_by
         public DateTime CreatedOn { get; set; }                 // created_on
         public int LotCodeSource { get; set; }                  // lot_code_source
-        public byte[]? AuditId { get; set; }                    // AuditID_MA (rowversion, DB-managed)
+        public long AuditId { get; set; }                       // auditid_ma (BIGINT, DB-managed)
         public string? Notes { get; set; }                      // notes (NULL)
         public int PackageDefinitionTypeId { get; set; }        // package_definition_type_id
-        public bool IsDemoPackage { get; set; }                 // is_demo_package
+        public decimal IsDemoPackage { get; set; }              // is_demo_package (NUMERIC)
     }
 }

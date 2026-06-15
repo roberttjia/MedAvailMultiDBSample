@@ -68,21 +68,21 @@ public sealed class EfCorePackageIdMapRepository : IPackageIdMapRepository
     {
         using var ctx = CreateContext();
         return ctx.Database.ExecuteSqlInterpolated(
-            $"INSERT INTO dbo.package_id_map (package_id, package_guid) VALUES ({row.PackageId}, {row.PackageGuid})");
+            $"INSERT INTO package_id_map (package_id, package_guid) VALUES ({row.PackageId}, {row.PackageGuid})");
     }
 
     public int UpdateGuid(int packageId, string? newGuid)
     {
         using var ctx = CreateContext();
         return ctx.Database.ExecuteSqlInterpolated(
-            $"UPDATE dbo.package_id_map SET package_guid = {newGuid} WHERE package_id = {packageId}");
+            $"UPDATE package_id_map SET package_guid = {newGuid} WHERE package_id = {packageId}");
     }
 
     public int Delete(int packageId)
     {
         using var ctx = CreateContext();
         return ctx.Database.ExecuteSqlInterpolated(
-            $"DELETE FROM dbo.package_id_map WHERE package_id = {packageId}");
+            $"DELETE FROM package_id_map WHERE package_id = {packageId}");
     }
 
     private static PackageIdMapDto ToDto(PackageIdMapEntity e) =>

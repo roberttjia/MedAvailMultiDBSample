@@ -1,4 +1,4 @@
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using Microsoft.Extensions.Configuration;
 using MedAvail.Common;
 
@@ -28,26 +28,32 @@ public sealed class ConfigurationConnectionStringProvider : IConnectionStringPro
         var server = Require(sql, "Server");
         var userId = Require(sql, "UserId");
         var password = Require(sql, "Password");
-        var port = sql.GetValue<int?>("Port") ?? 1433;
-        var trustCert = sql.GetValue<bool?>("TrustServerCertificate") ?? true;
+        var port = sql.GetValue<int?>("Port") ?? 5432;
 
-        var databaseName = sql.GetSection("Databases")[database.ToString()]
-            ?? throw new InvalidOperationException(
-                $"No database name configured for Sql:Databases:{database}.");
+        var (databaseName, searchPath) = GetDatabaseMapping(database);
 
-        var builder = new SqlConnectionStringBuilder
+        var builder = new NpgsqlConnectionStringBuilder
         {
-            DataSource = $"{server},{port}",
-            InitialCatalog = databaseName,
-            UserID = userId,
+            Host = server,
+            Port = port,
+            Database = databaseName,
+            Username = userId,
             Password = password,
-            TrustServerCertificate = trustCert,
-            // keeps the sample responsive when the placeholder server is unreachable
-            ConnectTimeout = 15
+            SearchPath = searchPath
         };
 
         return builder.ConnectionString;
     }
+
+    private static (string DatabaseName, string SearchPath) GetDatabaseMapping(MedAvailDatabase database)
+        => database switch
+        {
+            MedAvailDatabase.Core => ("MedAvailDB", "medavaildb_dbo"),
+            MedAvailDatabase.Auditing => ("MedAvailAuditingDb", "medavailauditingdb_dbo"),
+            MedAvailDatabase.DataAcquisition => ("MedAvailDataAcquisitionDb", "medavaildataacquisitiondb_dbo"),
+            MedAvailDatabase.PackageManagement => ("MedAvailPackageManagementDb", "medavailpackagemanagementdb_dbo"),
+            _ => throw new InvalidOperationException($"No database mapping configured for {database}.")
+        };
 
     private static string Require(IConfigurationSection section, string key)
     {

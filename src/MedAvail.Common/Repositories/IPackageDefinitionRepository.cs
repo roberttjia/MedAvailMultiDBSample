@@ -4,7 +4,7 @@ using MedAvail.Common.Models;
 namespace MedAvail.Common.Repositories
 {
     /// <summary>
-    /// Data-access contract for dbo.package_definition. Implemented separately by
+    /// Data-access contract for package_definition. Implemented separately by
     /// the ADO.NET, EF Core, and EF6 layers; the business layer depends only on
     /// this interface so the access technology is swappable.
     /// </summary>

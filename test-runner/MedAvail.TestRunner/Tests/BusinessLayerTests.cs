@@ -124,7 +124,7 @@ public sealed class BusinessLayerTests
         ProductCode = marker,
         ProductManufacturer = "Business Test Mfr",
         PackageSize = 1m,
-        ControlledSubstance = false,
-        IsDemoPackage = true
+        ControlledSubstance = 0m,
+        IsDemoPackage = 1m
     };
 }

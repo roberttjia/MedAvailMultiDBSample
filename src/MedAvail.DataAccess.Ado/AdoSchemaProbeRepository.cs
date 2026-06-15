@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using MedAvail.Common;
 
 namespace MedAvail.DataAccess.Ado
@@ -10,7 +10,7 @@ namespace MedAvail.DataAccess.Ado
     public sealed class ProbedColumn
     {
         public string Name { get; set; } = string.Empty;
-        public string DataTypeName { get; set; } = string.Empty;  // SQL Server type name
+        public string DataTypeName { get; set; } = string.Empty;  // PostgreSQL type name
         public Type ClrType { get; set; } = typeof(object);       // mapped .NET type
         public bool AllowDbNull { get; set; }
     }
@@ -40,7 +40,7 @@ namespace MedAvail.DataAccess.Ado
             : base(connections, database) { }
 
         /// <summary>
-        /// Reads column schema for a table/view via a TOP(sampleSize) probe and a
+        /// Reads column schema for a table/view via a LIMIT(sampleSize) probe and a
         /// COUNT. The object name is validated against a strict identifier pattern
         /// (no user input here, but defensive since it is concatenated).
         /// </summary>
@@ -53,18 +53,18 @@ namespace MedAvail.DataAccess.Ado
             var columns = new List<ProbedColumn>();
             using (var cmd = conn.CreateCommand())
             {
-                cmd.CommandText = $"SELECT TOP ({sampleSize}) * FROM dbo.[{objectName}];";
+                cmd.CommandText = $"SELECT * FROM {objectName} LIMIT {sampleSize};";
                 using var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess);
 
-                var schema = reader.GetColumnSchema();
-                foreach (var col in schema)
+                // Build column list from reader metadata (FieldCount + GetName + GetFieldType).
+                for (var i = 0; i < reader.FieldCount; i++)
                 {
                     columns.Add(new ProbedColumn
                     {
-                        Name = col.ColumnName,
-                        DataTypeName = col.DataTypeName ?? "unknown",
-                        ClrType = col.DataType ?? typeof(object),
-                        AllowDbNull = col.AllowDBNull ?? true
+                        Name = reader.GetName(i),
+                        DataTypeName = reader.GetDataTypeName(i) ?? "unknown",
+                        ClrType = reader.GetFieldType(i) ?? typeof(object),
+                        AllowDbNull = true  // conservative default; NpgsqlDataReader doesn't expose nullability here
                     });
                 }
 
@@ -87,7 +87,7 @@ namespace MedAvail.DataAccess.Ado
             var result = Probe(objectName, sampleSize);
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = $"SELECT COUNT_BIG(*) FROM dbo.[{objectName}];";
+            cmd.CommandText = $"SELECT COUNT(*) FROM {objectName};";
             result.TotalRowCount = Convert.ToInt64(cmd.ExecuteScalar());
             return result;
         }

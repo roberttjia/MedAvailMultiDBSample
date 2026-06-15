@@ -9,7 +9,7 @@ namespace MedAvail.DataAccess.Ef6.Contexts
     /// representative set of tables and the two views for schema-conversion
     /// coverage. Database-first; query-only.
     /// </summary>
-    [DbConfigurationType(typeof(Ef6SqlServerConfiguration))]
+    [DbConfigurationType(typeof(Ef6NpgsqlConfiguration))]
     public class CoreEf6Context : DbContext
     {
         public CoreEf6Context(DbConnection connection, bool contextOwnsConnection)

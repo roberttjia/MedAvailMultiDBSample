@@ -4,20 +4,20 @@ using MedAvail.Common.Models;
 namespace MedAvail.Common.Repositories
 {
     /// <summary>
-    /// Stored-procedure-based access to dbo.container in MedAvailPackageManagementDb.
+    /// Stored-procedure-based access to container in MedAvailPackageManagementDb.
     /// CreateContainer / ModifyContainer are invoked as CommandType.StoredProcedure.
     /// </summary>
     public interface IContainerRepository
     {
         /// <summary>
-        /// Calls dbo.CreateContainer. The proc generates the container_id (GUID)
+        /// Calls CreateContainer. The proc generates the container_id (GUID)
         /// and returns the created row. Returns the new ContainerDto.
         /// </summary>
         ContainerDto CreateContainer(int shape, decimal length, decimal width, decimal height,
             string changedBy, int? containerType = null, string? description = null);
 
         /// <summary>
-        /// Calls dbo.ModifyContainer for an existing container_id and returns the
+        /// Calls ModifyContainer for an existing container_id and returns the
         /// updated row.
         /// </summary>
         ContainerDto ModifyContainer(string containerId, int shape, decimal length, decimal width,

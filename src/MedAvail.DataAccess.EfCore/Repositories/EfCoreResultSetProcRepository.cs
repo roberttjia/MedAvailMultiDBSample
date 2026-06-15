@@ -1,15 +1,18 @@
-using System.Linq;
-using Microsoft.Data.SqlClient;
+using System;
+using System.Data;
+using Npgsql;
+using NpgsqlTypes;
 using Microsoft.EntityFrameworkCore;
 using MedAvail.Common;
 
 namespace MedAvail.DataAccess.EfCore.Repositories;
 
 /// <summary>
-/// EF Core invocation of the result-set-returning proc
-/// dbo.GenerateMockPackageMovementXML (MedAvailDB / Core). EF Core 8 runs a
-/// result-returning proc via Database.SqlQueryRaw&lt;T&gt;; the proc returns a
-/// single (XML) column, so we read it as string?.
+/// EF Core invocation of the result-set-returning procedure
+/// medavaildb_dbo.generatemockpackagemovementxml (MedAvailDB / Core).
+/// The PostgreSQL target is a PROCEDURE with an INOUT REFCURSOR parameter.
+/// We open a transaction, CALL the procedure with a cursor name, then
+/// FETCH ALL from the cursor to read the result rows.
 /// </summary>
 public sealed class EfCoreResultSetProcRepository
 {
@@ -21,20 +24,45 @@ public sealed class EfCoreResultSetProcRepository
         int packagesPerLoadSlot = 1)
     {
         using var ctx = _factory.CreateCore();
+        var conn = (NpgsqlConnection)ctx.Database.GetDbConnection();
+        if (conn.State != ConnectionState.Open)
+            conn.Open();
 
-        // EXEC the proc; the single FOR XML column comes back as the query value.
-        var rows = ctx.Database
-            .SqlQueryRaw<string?>(
-                "EXEC dbo.GenerateMockPackageMovementXML @p0, @p1",
-                new SqlParameter("@p0", medCenterSerialNumber),
-                new SqlParameter("@p1", packagesPerLoadSlot))
-            .ToList();
-
-        return new StoredProcResultInfo
+        using var tx = conn.BeginTransaction();
+        try
         {
-            ReturnedResultSet = true,
-            FieldCount = 1,            // single FOR XML column
-            RowCount = rows.Count
-        };
+            // CALL the procedure, passing the cursor name as the INOUT REFCURSOR parameter.
+            using var callCmd = conn.CreateCommand();
+            callCmd.Transaction = tx;
+            callCmd.CommandText = "CALL medavaildb_dbo.generatemockpackagemovementxml(@p0, @p1, @cursor)";
+            callCmd.Parameters.Add(new NpgsqlParameter("@p0", NpgsqlDbType.Varchar) { Value = medCenterSerialNumber });
+            callCmd.Parameters.Add(new NpgsqlParameter("@p1", NpgsqlDbType.Integer) { Value = packagesPerLoadSlot });
+            callCmd.Parameters.Add(new NpgsqlParameter("@cursor", NpgsqlDbType.Refcursor) { Value = "result_cursor" });
+            callCmd.ExecuteNonQuery();
+
+            // FETCH ALL from the cursor to read the result set.
+            using var fetchCmd = conn.CreateCommand();
+            fetchCmd.Transaction = tx;
+            fetchCmd.CommandText = "FETCH ALL FROM result_cursor";
+            using var reader = fetchCmd.ExecuteReader();
+
+            var rowCount = 0;
+            var fieldCount = reader.FieldCount;
+            while (reader.Read()) rowCount++;
+
+            tx.Commit();
+
+            return new StoredProcResultInfo
+            {
+                ReturnedResultSet = true,
+                FieldCount = fieldCount >= 1 ? fieldCount : 1,
+                RowCount = rowCount
+            };
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
     }
 }

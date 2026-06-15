@@ -11,7 +11,7 @@ namespace MedAvail.TestRunner.Tests;
 
 /// <summary>
 /// Coverage for a result-set-returning stored procedure
-/// (dbo.GenerateMockPackageMovementXML in MedAvailDB). In SQL Server the proc
+/// (GenerateMockPackageMovementXML in MedAvailDB). In SQL Server the proc
 /// returns a result set; the schema-migration tool converts such procs to a
 /// PostgreSQL procedure with a refcursor OUT parameter — a calling-convention
 /// change. These tests exercise the SQL Server form through all three

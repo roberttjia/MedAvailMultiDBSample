@@ -52,7 +52,7 @@ public sealed class EfCorePackageDefinitionRepository : IPackageDefinitionReposi
         using var ctx = _factory.CreatePackageManagement();
         var entity = ToEntity(definition);
         entity.PackageDefinitionId = 0; // identity, DB-assigned
-        entity.AuditId = null;          // rowversion, DB-assigned
+        // auditid_ma is DB-assigned via sequence default; leave at 0 (will be overwritten)
         ctx.PackageDefinitions.Add(entity);
         ctx.SaveChanges();
         return entity.PackageDefinitionId;

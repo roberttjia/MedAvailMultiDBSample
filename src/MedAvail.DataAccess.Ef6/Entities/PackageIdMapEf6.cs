@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace MedAvail.DataAccess.Ef6.Entities
 {
     /// <summary>
-    /// EF6 entity for dbo.package_id_map. The table has no primary key. EF6 has no
+    /// EF6 entity for package_id_map. The table has no primary key. EF6 has no
     /// first-class keyless support, so package_id is declared as the entity key for
     /// querying only; all writes are done via parameterized raw SQL.
     /// </summary>

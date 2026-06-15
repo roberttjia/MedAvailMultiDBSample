@@ -1,18 +1,16 @@
 using System;
 using System.Data;
-using Microsoft.Data.SqlClient;
+using Npgsql;
+using NpgsqlTypes;
 using MedAvail.Common;
 
 namespace MedAvail.DataAccess.Ado
 {
     /// <summary>
     /// ADO.NET invocation of a result-set-returning stored procedure in MedAvailDB
-    /// (Core). dbo.GenerateMockPackageMovementXML returns a single result set (one
-    /// FOR XML column) and is read-only (uses table variables), so it is safe to
-    /// call repeatedly against a shared database.
-    ///
-    /// This is the SQL Server "result set" calling convention; the migration tool
-    /// converts such procs to PostgreSQL procedures with a refcursor OUT param.
+    /// (Core). medavaildb_dbo.generatemockpackagemovementxml is a PostgreSQL PROCEDURE
+    /// with an INOUT REFCURSOR parameter. All three calling patterns open a transaction,
+    /// CALL the procedure with a cursor name, then FETCH ALL from the cursor.
     /// </summary>
     public sealed class AdoResultSetProcRepository : AdoRepositoryBase
     {
@@ -23,80 +21,129 @@ namespace MedAvail.DataAccess.Ado
             int packagesPerLoadSlot = 1)
         {
             using var conn = OpenConnection();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandType = CommandType.StoredProcedure;
-            cmd.CommandText = "dbo.GenerateMockPackageMovementXML";
-            cmd.CommandTimeout = 60;
-            cmd.Parameters.Add(Param("@MedCenterSerialNumber", SqlDbType.VarChar, medCenterSerialNumber));
-            cmd.Parameters.Add(Param("@NumberOfPackagesPerLoadSlot", SqlDbType.Int, packagesPerLoadSlot));
-
-            using var reader = cmd.ExecuteReader();
-            var info = new StoredProcResultInfo
+            using var tx = conn.BeginTransaction();
+            try
             {
-                ReturnedResultSet = true,     // ExecuteReader always yields a reader
-                FieldCount = reader.FieldCount
-            };
-            while (reader.Read()) info.RowCount++;
-            return info;
+                using var callCmd = conn.CreateCommand();
+                callCmd.Transaction = tx;
+                callCmd.CommandText =
+                    "CALL generatemockpackagemovementxml(@MedCenterSerialNumber, @NumberOfPackagesPerLoadSlot, @cursor)";
+                callCmd.CommandTimeout = 60;
+                callCmd.Parameters.Add(Param("@MedCenterSerialNumber", NpgsqlDbType.Varchar, medCenterSerialNumber));
+                callCmd.Parameters.Add(Param("@NumberOfPackagesPerLoadSlot", NpgsqlDbType.Integer, packagesPerLoadSlot));
+                callCmd.Parameters.Add(new NpgsqlParameter("@cursor", NpgsqlDbType.Refcursor) { Value = "result_cursor" });
+                callCmd.ExecuteNonQuery();
+
+                using var fetchCmd = conn.CreateCommand();
+                fetchCmd.Transaction = tx;
+                fetchCmd.CommandText = "FETCH ALL FROM result_cursor";
+                using var reader = fetchCmd.ExecuteReader();
+
+                var info = new StoredProcResultInfo
+                {
+                    ReturnedResultSet = true,
+                    FieldCount = reader.FieldCount
+                };
+                while (reader.Read()) info.RowCount++;
+
+                tx.Commit();
+                return info;
+            }
+            catch
+            {
+                tx.Rollback();
+                throw;
+            }
         }
 
         /// <summary>
-        /// Same proc, but materialized into a DataTable via SqlDataAdapter.Fill
-        /// (the classic disconnected ADO.NET pattern) instead of a SqlDataReader.
+        /// Same proc, but materialized manually via cursor fetch (replaces SqlDataAdapter.Fill).
+        /// NpgsqlDataAdapter does not support stored procedures with REFCURSOR parameters.
         /// </summary>
         public StoredProcResultInfo GenerateMockPackageMovementDataTable(string medCenterSerialNumber,
             int packagesPerLoadSlot = 1)
         {
             using var conn = OpenConnection();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandType = CommandType.StoredProcedure;
-            cmd.CommandText = "dbo.GenerateMockPackageMovementXML";
-            cmd.CommandTimeout = 60;
-            cmd.Parameters.Add(Param("@MedCenterSerialNumber", SqlDbType.VarChar, medCenterSerialNumber));
-            cmd.Parameters.Add(Param("@NumberOfPackagesPerLoadSlot", SqlDbType.Int, packagesPerLoadSlot));
-
-            var table = new DataTable();
-            using var adapter = new SqlDataAdapter(cmd);
-            adapter.Fill(table);
-
-            return new StoredProcResultInfo
+            using var tx = conn.BeginTransaction();
+            try
             {
-                ReturnedResultSet = true,     // Fill always produces a table
-                FieldCount = table.Columns.Count,
-                RowCount = table.Rows.Count
-            };
+                using var callCmd = conn.CreateCommand();
+                callCmd.Transaction = tx;
+                callCmd.CommandText =
+                    "CALL generatemockpackagemovementxml(@MedCenterSerialNumber, @NumberOfPackagesPerLoadSlot, @cursor)";
+                callCmd.CommandTimeout = 60;
+                callCmd.Parameters.Add(Param("@MedCenterSerialNumber", NpgsqlDbType.Varchar, medCenterSerialNumber));
+                callCmd.Parameters.Add(Param("@NumberOfPackagesPerLoadSlot", NpgsqlDbType.Integer, packagesPerLoadSlot));
+                callCmd.Parameters.Add(new NpgsqlParameter("@cursor", NpgsqlDbType.Refcursor) { Value = "result_cursor" });
+                callCmd.ExecuteNonQuery();
+
+                using var fetchCmd = conn.CreateCommand();
+                fetchCmd.Transaction = tx;
+                fetchCmd.CommandText = "FETCH ALL FROM result_cursor";
+                using var reader = fetchCmd.ExecuteReader();
+
+                var rowCount = 0;
+                var fieldCount = reader.FieldCount;
+                while (reader.Read()) rowCount++;
+
+                tx.Commit();
+
+                return new StoredProcResultInfo
+                {
+                    ReturnedResultSet = true,
+                    FieldCount = fieldCount,
+                    RowCount = rowCount
+                };
+            }
+            catch
+            {
+                tx.Rollback();
+                throw;
+            }
         }
 
         /// <summary>
-        /// Calls the proc via raw SQL (EXEC text) rather than
-        /// CommandType.StoredProcedure. On SQL Server this returns the result set
-        /// directly. On PostgreSQL the converted procedure uses a REFCURSOR OUT
-        /// parameter, and because this call does NOT declare itself as a stored
-        /// procedure, Npgsql will not auto-dereference the cursor — the migrated
-        /// code must wrap the call in a transaction and FETCH from the refcursor
-        /// explicitly. This mirrors legacy code that builds SQL text or uses
-        /// helpers that never set CommandType.StoredProcedure.
+        /// Calls the proc via explicit CALL text (mirrors the former EXEC text pattern).
+        /// On PostgreSQL the procedure uses a REFCURSOR OUT parameter, so we must wrap
+        /// the call in a transaction and FETCH from the cursor explicitly.
         /// </summary>
         public StoredProcResultInfo GenerateMockPackageMovementExec(string medCenterSerialNumber,
             int packagesPerLoadSlot = 1)
         {
             using var conn = OpenConnection();
-            using var cmd = conn.CreateCommand();
-            // Note: CommandType stays Text (the default) — deliberately not StoredProcedure.
-            cmd.CommandText =
-                "EXEC dbo.GenerateMockPackageMovementXML @MedCenterSerialNumber, @NumberOfPackagesPerLoadSlot;";
-            cmd.CommandTimeout = 60;
-            cmd.Parameters.Add(Param("@MedCenterSerialNumber", SqlDbType.VarChar, medCenterSerialNumber));
-            cmd.Parameters.Add(Param("@NumberOfPackagesPerLoadSlot", SqlDbType.Int, packagesPerLoadSlot));
-
-            using var reader = cmd.ExecuteReader();
-            var info = new StoredProcResultInfo
+            using var tx = conn.BeginTransaction();
+            try
             {
-                ReturnedResultSet = reader.HasRows,
-                FieldCount = reader.FieldCount
-            };
-            while (reader.Read()) info.RowCount++;
-            return info;
+                using var callCmd = conn.CreateCommand();
+                callCmd.Transaction = tx;
+                callCmd.CommandText =
+                    "CALL generatemockpackagemovementxml(@MedCenterSerialNumber, @NumberOfPackagesPerLoadSlot, @cursor)";
+                callCmd.CommandTimeout = 60;
+                callCmd.Parameters.Add(Param("@MedCenterSerialNumber", NpgsqlDbType.Varchar, medCenterSerialNumber));
+                callCmd.Parameters.Add(Param("@NumberOfPackagesPerLoadSlot", NpgsqlDbType.Integer, packagesPerLoadSlot));
+                callCmd.Parameters.Add(new NpgsqlParameter("@cursor", NpgsqlDbType.Refcursor) { Value = "result_cursor" });
+                callCmd.ExecuteNonQuery();
+
+                using var fetchCmd = conn.CreateCommand();
+                fetchCmd.Transaction = tx;
+                fetchCmd.CommandText = "FETCH ALL FROM result_cursor";
+                using var reader = fetchCmd.ExecuteReader();
+
+                var info = new StoredProcResultInfo
+                {
+                    ReturnedResultSet = reader.HasRows,
+                    FieldCount = reader.FieldCount
+                };
+                while (reader.Read()) info.RowCount++;
+
+                tx.Commit();
+                return info;
+            }
+            catch
+            {
+                tx.Rollback();
+                throw;
+            }
         }
 
         /// <summary>Returns any existing med center serial number, or null if none.</summary>
@@ -104,7 +151,7 @@ namespace MedAvail.DataAccess.Ado
         {
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT TOP 1 serial_number FROM dbo.medcenter WHERE serial_number IS NOT NULL;";
+            cmd.CommandText = "SELECT serial_number FROM medcenter WHERE serial_number IS NOT NULL LIMIT 1;";
             var result = cmd.ExecuteScalar();
             return result is null or DBNull ? null : result.ToString();
         }

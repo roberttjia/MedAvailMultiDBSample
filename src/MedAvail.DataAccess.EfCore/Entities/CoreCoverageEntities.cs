@@ -7,7 +7,7 @@ namespace MedAvail.DataAccess.EfCore.Entities;
 
 // Minimal database-first EF Core entities for MedAvailDB (Core) schema-conversion
 // coverage. Each maps its real primary key plus a few representative typed columns
-// (bit / datetime / int / bigint / varbinary / string) to exercise the type
+// (numeric / datetime / int / bigint / varbinary / string) to exercise the type
 // conversions that matter for migration. Query-only. Tables use [Key]; the two
 // views are mapped [Keyless].
 
@@ -20,12 +20,12 @@ public class MedcenterCore
     [Column("serial_number")] public string? SerialNumber { get; set; }
 }
 
-[Table("ResourceBinary")]
+[Table("resourcebinary")]
 public class ResourceBinaryCore
 {
     [Key, Column("resourceInfo_id")] public int ResourceInfoId { get; set; }
     [Column("node_id")] public int NodeId { get; set; }
-    [Column("enabled")] public bool Enabled { get; set; }
+    [Column("enabled")] public decimal Enabled { get; set; }
     [Column("datacontent")] public byte[]? DataContent { get; set; }
     [Column("changed_on")] public DateTime ChangedOn { get; set; }
 }
@@ -35,7 +35,7 @@ public class WorkflowProfileCore
 {
     [Key, Column("workflow_profile_id")] public string WorkflowProfileId { get; set; } = string.Empty;
     [Column("workflow_type")] public string WorkflowType { get; set; } = string.Empty;
-    [Column("is_container")] public bool IsContainer { get; set; }
+    [Column("is_container")] public decimal IsContainer { get; set; }
     [Column("workflow_definition")] public byte[] WorkflowDefinition { get; set; } = Array.Empty<byte>();
 }
 
@@ -44,7 +44,7 @@ public class UserCore
 {
     [Key, Column("user_id")] public int UserId { get; set; }
     [Column("username")] public string Username { get; set; } = string.Empty;
-    [Column("active")] public bool Active { get; set; }
+    [Column("active")] public decimal Active { get; set; }
     [Column("changed_date")] public DateTime ChangedDate { get; set; }
 }
 
@@ -61,7 +61,7 @@ public class PacardCore
 {
     [Key, Column("pacard_id")] public int PacardId { get; set; }
     [Column("card_number")] public long CardNumber { get; set; }
-    [Column("active")] public bool Active { get; set; }
+    [Column("active")] public decimal Active { get; set; }
     [Column("changed_on")] public DateTime ChangedOn { get; set; }
 }
 
@@ -87,21 +87,21 @@ public class PartCore
     [Key, Column("part_id")] public int PartId { get; set; }
     [Column("part_type_id")] public int PartTypeId { get; set; }
     [Column("node_id")] public int NodeId { get; set; }
-    [Column("is_enabled")] public bool IsEnabled { get; set; }
+    [Column("is_enabled")] public decimal IsEnabled { get; set; }
     [Column("changed_on")] public DateTime ChangedOn { get; set; }
 }
 
-[Table("PatientProfile")]
+[Table("patientprofile")]
 public class PatientProfileCore
 {
     [Key, Column("PatientProfileId")] public string PatientProfileId { get; set; } = string.Empty;
     [Column("ExternalPatientId")] public string ExternalPatientId { get; set; } = string.Empty;
-    [Column("AccountLocked")] public bool AccountLocked { get; set; }
+    [Column("AccountLocked")] public decimal AccountLocked { get; set; }
     [Column("CreatedOn")] public DateTime CreatedOn { get; set; }
 }
 
 [Keyless]
-[Table("AllDuplicateParts")]
+[Table("allduplicateparts")]
 public class AllDuplicatePartsCore
 {
     [Column("part_id")] public int PartId { get; set; }

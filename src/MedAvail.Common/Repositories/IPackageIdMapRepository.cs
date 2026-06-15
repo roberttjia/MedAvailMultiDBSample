@@ -4,7 +4,7 @@ using MedAvail.Common.Models;
 namespace MedAvail.Common.Repositories
 {
     /// <summary>
-    /// Data-access contract for dbo.package_id_map. The implementation is bound
+    /// Data-access contract for package_id_map. The implementation is bound
     /// to a specific <see cref="MedAvailDatabase"/> at construction, so the same
     /// interface can target whichever of the three databases owns the table.
     /// </summary>

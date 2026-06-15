@@ -20,17 +20,19 @@ public class PackageManagementDbContext : DbContext
         // package_id_map is keyless (no PK in the DB); query-only via the model.
         modelBuilder.Entity<PackageIdMapEntity>().HasNoKey().ToTable("package_id_map");
 
-        // package_definition decimals: match the SQL precision/scale to avoid
-        // silent truncation warnings.
+        // package_definition: match PostgreSQL precision/scale and map bool→numeric columns.
         modelBuilder.Entity<PackageDefinitionEntity>(e =>
         {
-            e.Property(p => p.PackageHeight).HasColumnType("decimal(5,2)");
-            e.Property(p => p.PackageWidth).HasColumnType("decimal(5,2)");
-            e.Property(p => p.PackageLength).HasColumnType("decimal(5,2)");
-            e.Property(p => p.CapDiameter).HasColumnType("decimal(5,2)");
-            e.Property(p => p.CapLength).HasColumnType("decimal(5,2)");
-            e.Property(p => p.Weight).HasColumnType("decimal(5,2)");
-            e.Property(p => p.PackageSize).HasColumnType("decimal(12,3)");
+            e.Property(p => p.PackageHeight).HasColumnType("numeric(5,2)");
+            e.Property(p => p.PackageWidth).HasColumnType("numeric(5,2)");
+            e.Property(p => p.PackageLength).HasColumnType("numeric(5,2)");
+            e.Property(p => p.CapDiameter).HasColumnType("numeric(5,2)");
+            e.Property(p => p.CapLength).HasColumnType("numeric(5,2)");
+            e.Property(p => p.Weight).HasColumnType("numeric(5,2)");
+            e.Property(p => p.PackageSize).HasColumnType("numeric(12,3)");
+            // cap and valid are NUMERIC in PostgreSQL but bool in C#; convert via int.
+            e.Property(p => p.Cap).HasConversion<int>();
+            e.Property(p => p.Valid).HasConversion<int>();
         });
 
         base.OnModelCreating(modelBuilder);

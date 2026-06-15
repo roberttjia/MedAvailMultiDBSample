@@ -6,11 +6,11 @@ namespace MedAvail.DataAccess.Ef6.Contexts
 {
     /// <summary>
     /// EF6 context bound to MedAvailPackageManagementDb. The provider is registered
-    /// in code via Ef6SqlServerConfiguration. The context is constructed with an
+    /// in code via Ef6NpgsqlConfiguration. The context is constructed with an
     /// existing DbConnection (owned by this context) so the connection string is
     /// supplied by the shared connection-string provider.
     /// </summary>
-    [DbConfigurationType(typeof(Ef6SqlServerConfiguration))]
+    [DbConfigurationType(typeof(Ef6NpgsqlConfiguration))]
     public class PackageManagementEf6Context : DbContext
     {
         public PackageManagementEf6Context(DbConnection connection, bool contextOwnsConnection)

@@ -1,6 +1,7 @@
 using System;
 using System.Data;
-using Microsoft.Data.SqlClient;
+using Npgsql;
+using NpgsqlTypes;
 using MedAvail.Common;
 
 namespace MedAvail.DataAccess.Ado
@@ -22,20 +23,20 @@ namespace MedAvail.DataAccess.Ado
             TargetDatabase = database;
         }
 
-        protected SqlConnection OpenConnection()
+        protected NpgsqlConnection OpenConnection()
         {
-            var connection = new SqlConnection(_connections.GetConnectionString(TargetDatabase));
+            var connection = new NpgsqlConnection(_connections.GetConnectionString(TargetDatabase));
             connection.Open();
             return connection;
         }
 
-        protected static SqlParameter Param(string name, SqlDbType type, object? value)
+        protected static NpgsqlParameter Param(string name, NpgsqlDbType type, object? value)
             => new(name, type) { Value = value ?? DBNull.Value };
 
-        protected static T? GetNullable<T>(SqlDataReader reader, int ordinal) where T : struct
+        protected static T? GetNullable<T>(NpgsqlDataReader reader, int ordinal) where T : struct
             => reader.IsDBNull(ordinal) ? null : reader.GetFieldValue<T>(ordinal);
 
-        protected static string? GetNullableString(SqlDataReader reader, int ordinal)
+        protected static string? GetNullableString(NpgsqlDataReader reader, int ordinal)
             => reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
     }
 }
