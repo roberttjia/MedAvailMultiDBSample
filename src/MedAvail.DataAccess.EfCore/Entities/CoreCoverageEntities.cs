@@ -20,10 +20,10 @@ public class MedcenterCore
     [Column("serial_number")] public string? SerialNumber { get; set; }
 }
 
-[Table("ResourceBinary")]
+[Table("resourcebinary")]
 public class ResourceBinaryCore
 {
-    [Key, Column("resourceInfo_id")] public int ResourceInfoId { get; set; }
+    [Key, Column("resourceinfo_id")] public int ResourceInfoId { get; set; }
     [Column("node_id")] public int NodeId { get; set; }
     [Column("enabled")] public bool Enabled { get; set; }
     [Column("datacontent")] public byte[]? DataContent { get; set; }
@@ -91,17 +91,17 @@ public class PartCore
     [Column("changed_on")] public DateTime ChangedOn { get; set; }
 }
 
-[Table("PatientProfile")]
+[Table("patientprofile")]
 public class PatientProfileCore
 {
-    [Key, Column("PatientProfileId")] public string PatientProfileId { get; set; } = string.Empty;
-    [Column("ExternalPatientId")] public string ExternalPatientId { get; set; } = string.Empty;
-    [Column("AccountLocked")] public bool AccountLocked { get; set; }
-    [Column("CreatedOn")] public DateTime CreatedOn { get; set; }
+    [Key, Column("patientprofileid")] public string PatientProfileId { get; set; } = string.Empty;
+    [Column("externalpatientid")] public string ExternalPatientId { get; set; } = string.Empty;
+    [Column("accountlocked")] public bool AccountLocked { get; set; }
+    [Column("createdon")] public DateTime CreatedOn { get; set; }
 }
 
 [Keyless]
-[Table("AllDuplicateParts")]
+[Table("allduplicateparts")]
 public class AllDuplicatePartsCore
 {
     [Column("part_id")] public int PartId { get; set; }

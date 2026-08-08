@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using Microsoft.Data.SqlClient;
+using Npgsql;
+using NpgsqlTypes;
 using MedAvail.Common;
 using MedAvail.Common.Models;
 using MedAvail.Common.Repositories;
@@ -9,7 +10,7 @@ using MedAvail.Common.Repositories;
 namespace MedAvail.DataAccess.Ado
 {
     /// <summary>
-    /// ADO.NET access to dbo.package_definition (MedAvailPackageManagementDb).
+    /// ADO.NET access to package_definition (MedAvailPackageManagementDb).
     /// Demonstrates query + CRUD. package_definition has many FK dependencies on
     /// lookup tables, so Insert copies FK values from an existing row to remain
     /// valid without seeding lookups.
@@ -35,8 +36,8 @@ namespace MedAvail.DataAccess.Ado
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
-                $"SELECT TOP (@max) {SelectColumns} FROM dbo.package_definition ORDER BY package_definition_id DESC;";
-            cmd.Parameters.Add(Param("@max", SqlDbType.Int, maxRows));
+                $"SELECT {SelectColumns} FROM package_definition ORDER BY package_definition_id DESC LIMIT @max;";
+            cmd.Parameters.Add(Param("@max", NpgsqlDbType.Integer, maxRows));
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
                 list.Add(Map(reader));
@@ -48,8 +49,8 @@ namespace MedAvail.DataAccess.Ado
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
-                $"SELECT {SelectColumns} FROM dbo.package_definition WHERE package_definition_id = @id;";
-            cmd.Parameters.Add(Param("@id", SqlDbType.Int, packageDefinitionId));
+                $"SELECT {SelectColumns} FROM package_definition WHERE package_definition_id = @id;";
+            cmd.Parameters.Add(Param("@id", NpgsqlDbType.Integer, packageDefinitionId));
             using var reader = cmd.ExecuteReader();
             return reader.Read() ? Map(reader) : null;
         }
@@ -58,7 +59,7 @@ namespace MedAvail.DataAccess.Ado
         {
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT ISNULL(MAX(package_definition_id), 0) FROM dbo.package_definition;";
+            cmd.CommandText = "SELECT COALESCE(MAX(package_definition_id), 0) FROM package_definition;";
             return Convert.ToInt32(cmd.ExecuteScalar());
         }
 
@@ -68,7 +69,7 @@ namespace MedAvail.DataAccess.Ado
 
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
-INSERT INTO dbo.package_definition
+INSERT INTO package_definition
 (description, package_code, package_code_abs_location_id, package_height, package_width,
  package_length, shape, cap, cap_diameter, cap_length, weight, fragile_scale,
  lot_code_abs_location, lot_code_rel_location, expiry_abs_location, expiry_rel_location,
@@ -76,46 +77,46 @@ INSERT INTO dbo.package_definition
  product_code, product_manufacturer, package_size, package_size_uom_id, changed_date,
  changed_by, controlled_substance, created_by, created_on, lot_code_source,
  package_definition_type_id, is_demo_package)
-OUTPUT INSERTED.package_definition_id
 VALUES
 (@description, @package_code, @pcal, @height, @width, @length, @shape, @cap, @capd, @capl,
  @weight, @fragile, @lcal, @lcrl, @eal, @erl, @valid, @defstate, @prodcat, @product_name,
  @prodcodetype, @product_code, @manufacturer, @size, @sizeuom, @changed_date, @changed_by,
- @controlled, @created_by, @created_on, @lotsource, @deftype, @isdemo);";
+ @controlled, @created_by, @created_on, @lotsource, @deftype, @isdemo)
+RETURNING package_definition_id;";
 
-            cmd.Parameters.Add(Param("@description", SqlDbType.VarChar, definition.Description));
-            cmd.Parameters.Add(Param("@package_code", SqlDbType.NVarChar, definition.PackageCode));
-            cmd.Parameters.Add(Param("@pcal", SqlDbType.Int, definition.PackageCodeAbsLocationId));
-            cmd.Parameters.Add(Param("@height", SqlDbType.Decimal, definition.PackageHeight));
-            cmd.Parameters.Add(Param("@width", SqlDbType.Decimal, definition.PackageWidth));
-            cmd.Parameters.Add(Param("@length", SqlDbType.Decimal, definition.PackageLength));
-            cmd.Parameters.Add(Param("@shape", SqlDbType.Int, definition.Shape));
-            cmd.Parameters.Add(Param("@cap", SqlDbType.Bit, definition.Cap));
-            cmd.Parameters.Add(Param("@capd", SqlDbType.Decimal, definition.CapDiameter));
-            cmd.Parameters.Add(Param("@capl", SqlDbType.Decimal, definition.CapLength));
-            cmd.Parameters.Add(Param("@weight", SqlDbType.Decimal, definition.Weight));
-            cmd.Parameters.Add(Param("@fragile", SqlDbType.Int, definition.FragileScale));
-            cmd.Parameters.Add(Param("@lcal", SqlDbType.Int, definition.LotCodeAbsLocation));
-            cmd.Parameters.Add(Param("@lcrl", SqlDbType.Int, definition.LotCodeRelLocation));
-            cmd.Parameters.Add(Param("@eal", SqlDbType.Int, definition.ExpiryAbsLocation));
-            cmd.Parameters.Add(Param("@erl", SqlDbType.Int, definition.ExpiryRelLocation));
-            cmd.Parameters.Add(Param("@valid", SqlDbType.Bit, definition.Valid));
-            cmd.Parameters.Add(Param("@defstate", SqlDbType.Int, definition.DefinitionStateId));
-            cmd.Parameters.Add(Param("@prodcat", SqlDbType.Int, definition.ProductCategoryId));
-            cmd.Parameters.Add(Param("@product_name", SqlDbType.NVarChar, definition.ProductName));
-            cmd.Parameters.Add(Param("@prodcodetype", SqlDbType.Int, definition.ProductCodeTypeId));
-            cmd.Parameters.Add(Param("@product_code", SqlDbType.NVarChar, definition.ProductCode));
-            cmd.Parameters.Add(Param("@manufacturer", SqlDbType.NVarChar, definition.ProductManufacturer));
-            cmd.Parameters.Add(Param("@size", SqlDbType.Decimal, definition.PackageSize));
-            cmd.Parameters.Add(Param("@sizeuom", SqlDbType.Int, definition.PackageSizeUomId));
-            cmd.Parameters.Add(Param("@changed_date", SqlDbType.DateTime, definition.ChangedDate));
-            cmd.Parameters.Add(Param("@changed_by", SqlDbType.VarChar, definition.ChangedBy));
-            cmd.Parameters.Add(Param("@controlled", SqlDbType.Bit, definition.ControlledSubstance));
-            cmd.Parameters.Add(Param("@created_by", SqlDbType.NVarChar, definition.CreatedBy));
-            cmd.Parameters.Add(Param("@created_on", SqlDbType.DateTime, definition.CreatedOn));
-            cmd.Parameters.Add(Param("@lotsource", SqlDbType.Int, definition.LotCodeSource));
-            cmd.Parameters.Add(Param("@deftype", SqlDbType.Int, definition.PackageDefinitionTypeId));
-            cmd.Parameters.Add(Param("@isdemo", SqlDbType.Bit, definition.IsDemoPackage));
+            cmd.Parameters.Add(Param("@description", NpgsqlDbType.Text, definition.Description));
+            cmd.Parameters.Add(Param("@package_code", NpgsqlDbType.Text, definition.PackageCode));
+            cmd.Parameters.Add(Param("@pcal", NpgsqlDbType.Integer, definition.PackageCodeAbsLocationId));
+            cmd.Parameters.Add(Param("@height", NpgsqlDbType.Numeric, definition.PackageHeight));
+            cmd.Parameters.Add(Param("@width", NpgsqlDbType.Numeric, definition.PackageWidth));
+            cmd.Parameters.Add(Param("@length", NpgsqlDbType.Numeric, definition.PackageLength));
+            cmd.Parameters.Add(Param("@shape", NpgsqlDbType.Integer, definition.Shape));
+            cmd.Parameters.Add(Param("@cap", NpgsqlDbType.Numeric, definition.Cap ? 1 : 0));
+            cmd.Parameters.Add(Param("@capd", NpgsqlDbType.Numeric, definition.CapDiameter));
+            cmd.Parameters.Add(Param("@capl", NpgsqlDbType.Numeric, definition.CapLength));
+            cmd.Parameters.Add(Param("@weight", NpgsqlDbType.Numeric, definition.Weight));
+            cmd.Parameters.Add(Param("@fragile", NpgsqlDbType.Integer, definition.FragileScale));
+            cmd.Parameters.Add(Param("@lcal", NpgsqlDbType.Integer, definition.LotCodeAbsLocation));
+            cmd.Parameters.Add(Param("@lcrl", NpgsqlDbType.Integer, definition.LotCodeRelLocation));
+            cmd.Parameters.Add(Param("@eal", NpgsqlDbType.Integer, definition.ExpiryAbsLocation));
+            cmd.Parameters.Add(Param("@erl", NpgsqlDbType.Integer, definition.ExpiryRelLocation));
+            cmd.Parameters.Add(Param("@valid", NpgsqlDbType.Numeric, definition.Valid ? 1 : 0));
+            cmd.Parameters.Add(Param("@defstate", NpgsqlDbType.Integer, definition.DefinitionStateId));
+            cmd.Parameters.Add(Param("@prodcat", NpgsqlDbType.Integer, definition.ProductCategoryId));
+            cmd.Parameters.Add(Param("@product_name", NpgsqlDbType.Text, definition.ProductName));
+            cmd.Parameters.Add(Param("@prodcodetype", NpgsqlDbType.Integer, definition.ProductCodeTypeId));
+            cmd.Parameters.Add(Param("@product_code", NpgsqlDbType.Text, definition.ProductCode));
+            cmd.Parameters.Add(Param("@manufacturer", NpgsqlDbType.Text, definition.ProductManufacturer));
+            cmd.Parameters.Add(Param("@size", NpgsqlDbType.Numeric, definition.PackageSize));
+            cmd.Parameters.Add(Param("@sizeuom", NpgsqlDbType.Integer, definition.PackageSizeUomId));
+            cmd.Parameters.Add(Param("@changed_date", NpgsqlDbType.Timestamp, definition.ChangedDate));
+            cmd.Parameters.Add(Param("@changed_by", NpgsqlDbType.Text, definition.ChangedBy));
+            cmd.Parameters.Add(Param("@controlled", NpgsqlDbType.Numeric, definition.ControlledSubstance ? 1 : 0));
+            cmd.Parameters.Add(Param("@created_by", NpgsqlDbType.Text, definition.CreatedBy));
+            cmd.Parameters.Add(Param("@created_on", NpgsqlDbType.Timestamp, definition.CreatedOn));
+            cmd.Parameters.Add(Param("@lotsource", NpgsqlDbType.Integer, definition.LotCodeSource));
+            cmd.Parameters.Add(Param("@deftype", NpgsqlDbType.Integer, definition.PackageDefinitionTypeId));
+            cmd.Parameters.Add(Param("@isdemo", NpgsqlDbType.Numeric, definition.IsDemoPackage ? 1 : 0));
 
             return Convert.ToInt32(cmd.ExecuteScalar());
         }
@@ -124,20 +125,20 @@ VALUES
         {
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "DELETE FROM dbo.package_definition WHERE package_definition_id = @id;";
-            cmd.Parameters.Add(Param("@id", SqlDbType.Int, packageDefinitionId));
+            cmd.CommandText = "DELETE FROM package_definition WHERE package_definition_id = @id;";
+            cmd.Parameters.Add(Param("@id", NpgsqlDbType.Integer, packageDefinitionId));
             return cmd.ExecuteNonQuery();
         }
 
         /// <summary>
-        /// Reads the rowversion (AuditID_MA) bytes for a row, or null if absent.
+        /// Reads the AuditID_MA (bytea) bytes for a row, or null if absent.
         /// </summary>
         public byte[]? GetRowVersion(int packageDefinitionId)
         {
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT AuditID_MA FROM dbo.package_definition WHERE package_definition_id = @id;";
-            cmd.Parameters.Add(Param("@id", SqlDbType.Int, packageDefinitionId));
+            cmd.CommandText = "SELECT AuditID_MA FROM package_definition WHERE package_definition_id = @id;";
+            cmd.Parameters.Add(Param("@id", NpgsqlDbType.Integer, packageDefinitionId));
             var result = cmd.ExecuteScalar();
             return result is null or DBNull ? null : (byte[])result;
         }
@@ -152,34 +153,34 @@ VALUES
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
-                "UPDATE dbo.package_definition SET cap = @cap, valid = @valid, " +
+                "UPDATE package_definition SET cap = @cap, valid = @valid, " +
                 "controlled_substance = @cs, is_demo_package = @demo WHERE package_definition_id = @id;";
-            cmd.Parameters.Add(Param("@cap", SqlDbType.Bit, cap));
-            cmd.Parameters.Add(Param("@valid", SqlDbType.Bit, valid));
-            cmd.Parameters.Add(Param("@cs", SqlDbType.Bit, controlledSubstance));
-            cmd.Parameters.Add(Param("@demo", SqlDbType.Bit, isDemo));
-            cmd.Parameters.Add(Param("@id", SqlDbType.Int, packageDefinitionId));
+            cmd.Parameters.Add(Param("@cap", NpgsqlDbType.Numeric, cap ? 1 : 0));
+            cmd.Parameters.Add(Param("@valid", NpgsqlDbType.Numeric, valid ? 1 : 0));
+            cmd.Parameters.Add(Param("@cs", NpgsqlDbType.Numeric, controlledSubstance ? 1 : 0));
+            cmd.Parameters.Add(Param("@demo", NpgsqlDbType.Numeric, isDemo ? 1 : 0));
+            cmd.Parameters.Add(Param("@id", NpgsqlDbType.Integer, packageDefinitionId));
             return cmd.ExecuteNonQuery();
         }
 
         /// <summary>
         /// Updates a row's description using an optimistic-concurrency guard on the
-        /// rowversion. Returns rows affected (0 means the token was stale).
+        /// AuditID_MA bytea column. Returns rows affected (0 means the token was stale).
         /// </summary>
         public int UpdateDescriptionIfVersionMatches(int packageDefinitionId, string description, byte[] expectedRowVersion)
         {
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
-                "UPDATE dbo.package_definition SET description = @desc " +
+                "UPDATE package_definition SET description = @desc " +
                 "WHERE package_definition_id = @id AND AuditID_MA = @rv;";
-            cmd.Parameters.Add(Param("@desc", SqlDbType.VarChar, description));
-            cmd.Parameters.Add(Param("@id", SqlDbType.Int, packageDefinitionId));
-            cmd.Parameters.Add(Param("@rv", SqlDbType.Timestamp, expectedRowVersion));
+            cmd.Parameters.Add(Param("@desc", NpgsqlDbType.Text, description));
+            cmd.Parameters.Add(Param("@id", NpgsqlDbType.Integer, packageDefinitionId));
+            cmd.Parameters.Add(Param("@rv", NpgsqlDbType.Bytea, expectedRowVersion));
             return cmd.ExecuteNonQuery();
         }
 
-        private static PackageDefinitionDto Map(SqlDataReader r)
+        private static PackageDefinitionDto Map(NpgsqlDataReader r)
         {
             return new PackageDefinitionDto
             {

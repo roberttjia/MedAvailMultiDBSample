@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Data;
+using Npgsql;
+using NpgsqlTypes;
 using MedAvail.Common;
 using MedAvail.Common.Models;
 using MedAvail.Common.Repositories;
@@ -7,7 +9,7 @@ using MedAvail.Common.Repositories;
 namespace MedAvail.DataAccess.Ado
 {
     /// <summary>
-    /// ADO.NET access to dbo.package_id_map, bound to a specific database so the
+    /// ADO.NET access to package_id_map, bound to a specific database so the
     /// same table name in Core / DataAcquisition / PackageManagement is reached
     /// through separate, explicitly-targeted instances.
     /// </summary>
@@ -23,7 +25,7 @@ namespace MedAvail.DataAccess.Ado
             var list = new List<PackageIdMapDto>();
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT package_id, package_guid FROM dbo.package_id_map ORDER BY package_id;";
+            cmd.CommandText = "SELECT package_id, package_guid FROM package_id_map ORDER BY package_id;";
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
@@ -41,8 +43,8 @@ namespace MedAvail.DataAccess.Ado
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
-                "SELECT TOP 1 package_id, package_guid FROM dbo.package_id_map WHERE package_id = @id;";
-            cmd.Parameters.Add(Param("@id", SqlDbType.Int, packageId));
+                "SELECT package_id, package_guid FROM package_id_map WHERE package_id = @id LIMIT 1;";
+            cmd.Parameters.Add(Param("@id", NpgsqlDbType.Integer, packageId));
             using var reader = cmd.ExecuteReader();
             if (!reader.Read()) return null;
             return new PackageIdMapDto
@@ -56,9 +58,9 @@ namespace MedAvail.DataAccess.Ado
         {
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT COUNT(*) FROM dbo.package_id_map WHERE package_id = @id;";
-            cmd.Parameters.Add(Param("@id", SqlDbType.Int, packageId));
-            return (int)cmd.ExecuteScalar();
+            cmd.CommandText = "SELECT COUNT(*) FROM package_id_map WHERE package_id = @id;";
+            cmd.Parameters.Add(Param("@id", NpgsqlDbType.Integer, packageId));
+            return (int)(long)cmd.ExecuteScalar()!;
         }
 
         public int Insert(PackageIdMapDto row)
@@ -66,9 +68,9 @@ namespace MedAvail.DataAccess.Ado
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
-                "INSERT INTO dbo.package_id_map (package_id, package_guid) VALUES (@id, @guid);";
-            cmd.Parameters.Add(Param("@id", SqlDbType.Int, row.PackageId));
-            cmd.Parameters.Add(Param("@guid", SqlDbType.NVarChar, row.PackageGuid));
+                "INSERT INTO package_id_map (package_id, package_guid) VALUES (@id, @guid);";
+            cmd.Parameters.Add(Param("@id", NpgsqlDbType.Integer, row.PackageId));
+            cmd.Parameters.Add(Param("@guid", NpgsqlDbType.Text, row.PackageGuid));
             return cmd.ExecuteNonQuery();
         }
 
@@ -77,9 +79,9 @@ namespace MedAvail.DataAccess.Ado
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
-                "UPDATE dbo.package_id_map SET package_guid = @guid WHERE package_id = @id;";
-            cmd.Parameters.Add(Param("@guid", SqlDbType.NVarChar, newGuid));
-            cmd.Parameters.Add(Param("@id", SqlDbType.Int, packageId));
+                "UPDATE package_id_map SET package_guid = @guid WHERE package_id = @id;";
+            cmd.Parameters.Add(Param("@guid", NpgsqlDbType.Text, newGuid));
+            cmd.Parameters.Add(Param("@id", NpgsqlDbType.Integer, packageId));
             return cmd.ExecuteNonQuery();
         }
 
@@ -87,8 +89,8 @@ namespace MedAvail.DataAccess.Ado
         {
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "DELETE FROM dbo.package_id_map WHERE package_id = @id;";
-            cmd.Parameters.Add(Param("@id", SqlDbType.Int, packageId));
+            cmd.CommandText = "DELETE FROM package_id_map WHERE package_id = @id;";
+            cmd.Parameters.Add(Param("@id", NpgsqlDbType.Integer, packageId));
             return cmd.ExecuteNonQuery();
         }
     }

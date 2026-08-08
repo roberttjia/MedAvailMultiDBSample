@@ -19,11 +19,11 @@ namespace MedAvail.DataAccess.Ef6.Entities
         [Column("serial_number")] public string? SerialNumber { get; set; }
     }
 
-    [Table("ResourceBinary")]
+    [Table("resourcebinary")]
     public class ResourceBinaryEf6
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.None)]
-        [Column("resourceInfo_id")] public int ResourceInfoId { get; set; }
+        [Column("resourceinfo_id")] public int ResourceInfoId { get; set; }
         [Column("node_id")] public int NodeId { get; set; }
         [Column("enabled")] public bool Enabled { get; set; }
         [Column("datacontent")] public byte[]? DataContent { get; set; }
@@ -98,13 +98,13 @@ namespace MedAvail.DataAccess.Ef6.Entities
         [Column("changed_on")] public DateTime ChangedOn { get; set; }
     }
 
-    [Table("PatientProfile")]
+    [Table("patientprofile")]
     public class PatientProfileEf6
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.None)]
-        [Column("PatientProfileId")] public string PatientProfileId { get; set; } = string.Empty;
-        [Column("ExternalPatientId")] public string ExternalPatientId { get; set; } = string.Empty;
-        [Column("AccountLocked")] public bool AccountLocked { get; set; }
-        [Column("CreatedOn")] public DateTime CreatedOn { get; set; }
+        [Column("patientprofileid")] public string PatientProfileId { get; set; } = string.Empty;
+        [Column("externalpatientid")] public string ExternalPatientId { get; set; } = string.Empty;
+        [Column("accountlocked")] public bool AccountLocked { get; set; }
+        [Column("createdon")] public DateTime CreatedOn { get; set; }
     }
 }

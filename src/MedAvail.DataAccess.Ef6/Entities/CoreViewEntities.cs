@@ -6,7 +6,7 @@ namespace MedAvail.DataAccess.Ef6.Entities
     // EF6 entities for the two MedAvailDB views. EF6 requires a key even for a
     // view, so a non-null column is declared as the key (query-only mapping).
 
-    [Table("AllDuplicateParts")]
+    [Table("allduplicateparts")]
     public class AllDuplicatePartsEf6
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.None)]

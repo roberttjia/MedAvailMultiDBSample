@@ -53,8 +53,7 @@ namespace MedAvail.DataAccess.Ef6.Entities
         [Column("created_on")] public DateTime CreatedOn { get; set; }
         [Column("lot_code_source")] public int LotCodeSource { get; set; }
 
-        [Timestamp]
-        [Column("AuditID_MA")]
+        [Column("auditid_ma")]
         public byte[]? AuditId { get; set; }
 
         [Column("notes")] public string? Notes { get; set; }

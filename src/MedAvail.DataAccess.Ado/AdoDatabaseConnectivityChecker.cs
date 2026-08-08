@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using MedAvail.Common;
 
 namespace MedAvail.DataAccess.Ado
 {
     /// <summary>
     /// ADO.NET connectivity probe. Opens a connection per database and runs a
-    /// trivial query that returns DB_NAME() so we can confirm the connection
-    /// landed in the database we intended (not just that the server is up).
+    /// trivial query that returns current_database() so we can confirm the
+    /// connection landed in the database we intended (not just that the server
+    /// is up).
     /// </summary>
     public sealed class AdoDatabaseConnectivityChecker : IDatabaseConnectivityChecker
     {
@@ -29,7 +30,7 @@ namespace MedAvail.DataAccess.Ado
             try
             {
                 connectionString = _connections.GetConnectionString(database);
-                expected = new SqlConnectionStringBuilder(connectionString).InitialCatalog;
+                expected = new NpgsqlConnectionStringBuilder(connectionString).Database ?? database.ToString();
             }
             catch (Exception ex)
             {
@@ -40,11 +41,11 @@ namespace MedAvail.DataAccess.Ado
             var sw = Stopwatch.StartNew();
             try
             {
-                using var connection = new SqlConnection(connectionString);
+                using var connection = new NpgsqlConnection(connectionString);
                 connection.Open();
 
                 using var command = connection.CreateCommand();
-                command.CommandText = "SELECT DB_NAME();";
+                command.CommandText = "SELECT current_database();";
                 var reported = Convert.ToString(command.ExecuteScalar());
 
                 sw.Stop();

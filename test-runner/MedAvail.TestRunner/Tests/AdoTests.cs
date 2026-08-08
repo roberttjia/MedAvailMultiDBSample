@@ -216,7 +216,7 @@ public sealed class AdoTests
         harness.Run("Cross-database stored proc RemoveMedCenter (rolled back)", cat, "Ado", () =>
         {
             // Non-existent serial => nothing matches; wrapped in a transaction that
-            // always rolls back. Exercises the cross-db EXEC path safely.
+            // always rolls back. Exercises the cross-db CALL path safely.
             var serial = AdoCrossDatabaseRepository.NewNonExistentSerial();
             var ok = repo.InvokeRemoveMedCenterInRollback(serial);
             Assert.True(ok, "RemoveMedCenter (which EXECs across databases) should run without error");

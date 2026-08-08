@@ -1,19 +1,19 @@
 using System;
 using System.Data;
-using Microsoft.Data.SqlClient;
+using Npgsql;
+using NpgsqlTypes;
 using MedAvail.Common;
 
 namespace MedAvail.DataAccess.Ado
 {
     /// <summary>
-    /// Exercises SQL Server cross-database access from a single connection:
-    ///   - a three-part-name query (MedAvailDB -> PackageManagementDb), and
-    ///   - a stored procedure (MedAvailDB.dbo.RemoveMedCenter) that internally
-    ///     EXECs MedAvailPackageManagementDB.dbo.PermanentlyDeleteAllPackagesForMedCenter.
+    /// Exercises PostgreSQL cross-schema access from a single connection:
+    ///   - a direct query against package_id_map (PostgreSQL has no cross-database
+    ///     three-part-name queries; the table is accessed via SearchPath), and
+    ///   - a stored procedure (removemedcenter) that is a plain PROCEDURE (no
+    ///     REFCURSOR), called via CALL inside a transaction.
     ///
-    /// This is the "same server, multiple databases" topology the schema-conversion
-    /// team targets (later as multiple schemas in one Postgres database).
-    /// Connected to MedAvailDB.
+    /// Connected to MedAvailDB (Core).
     /// </summary>
     public sealed class AdoCrossDatabaseRepository : AdoRepositoryBase
     {
@@ -21,24 +21,23 @@ namespace MedAvail.DataAccess.Ado
             : base(connections, MedAvailDatabase.Core) { }
 
         /// <summary>
-        /// Runs a read-only query that references a table in another database via
-        /// a three-part name, while connected to MedAvailDB. Returns the row count
-        /// it could read (proves cross-database name resolution works).
+        /// Queries package_id_map directly (PostgreSQL does not support cross-database
+        /// three-part-name queries; the SearchPath resolves the table). Returns the
+        /// row count to confirm connectivity and table accessibility.
         /// </summary>
         public int CountPackageIdMapInPackageManagement()
         {
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText =
-                "SELECT COUNT(*) FROM MedAvailPackageManagementDb.dbo.package_id_map;";
+            cmd.CommandText = "SELECT COUNT(*) FROM package_id_map;";
             return Convert.ToInt32(cmd.ExecuteScalar());
         }
 
         /// <summary>
-        /// Invokes dbo.RemoveMedCenter inside a transaction that is ALWAYS rolled
-        /// back, so the cross-database stored-procedure path executes but nothing
-        /// is persisted. Use a non-existent serial number so no rows match even
-        /// before the rollback. Returns true if the proc executed without error.
+        /// Invokes removemedcenter inside a transaction that is ALWAYS rolled
+        /// back, so the stored-procedure path executes but nothing is persisted.
+        /// Use a non-existent serial number so no rows match even before the
+        /// rollback. Returns true if the proc executed without error.
         /// </summary>
         public bool InvokeRemoveMedCenterInRollback(string nonExistentSerial)
         {
@@ -48,18 +47,12 @@ namespace MedAvail.DataAccess.Ado
             {
                 using var cmd = conn.CreateCommand();
                 cmd.Transaction = tx;
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.CommandText = "dbo.RemoveMedCenter";
+                cmd.CommandText = "CALL removemedcenter(@p_medcenterserialnumber, @p_username, @p_ticketnumber)";
                 cmd.CommandTimeout = 60;
-                cmd.Parameters.Add(Param("@MedCenterSerialNumber", SqlDbType.NVarChar, nonExistentSerial));
-                cmd.Parameters.Add(Param("@UserName", SqlDbType.NVarChar, "xdb-test"));
-                cmd.Parameters.Add(Param("@TicketNumber", SqlDbType.NVarChar, "xdb-test"));
-
-                // RemoveMedCenter emits result sets (PRINT + possible SELECTs); drain them.
-                using (var reader = cmd.ExecuteReader())
-                {
-                    do { while (reader.Read()) { /* drain */ } } while (reader.NextResult());
-                }
+                cmd.Parameters.AddWithValue("@p_medcenterserialnumber", nonExistentSerial);
+                cmd.Parameters.AddWithValue("@p_username", "xdb-test");
+                cmd.Parameters.AddWithValue("@p_ticketnumber", "xdb-test");
+                cmd.ExecuteNonQuery();
 
                 return true;
             }

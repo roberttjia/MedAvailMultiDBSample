@@ -29,7 +29,7 @@ public class PackageManagementDbContext : DbContext
             e.Property(p => p.PackageLength).HasColumnType("decimal(5,2)");
             e.Property(p => p.CapDiameter).HasColumnType("decimal(5,2)");
             e.Property(p => p.CapLength).HasColumnType("decimal(5,2)");
-            e.Property(p => p.Weight).HasColumnType("decimal(5,2)");
+            e.Property(p => p.Weight).HasColumnType("decimal(5,2)").HasColumnName("weight");
             e.Property(p => p.PackageSize).HasColumnType("decimal(12,3)");
         });
 

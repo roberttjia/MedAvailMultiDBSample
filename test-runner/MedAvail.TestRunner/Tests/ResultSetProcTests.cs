@@ -53,14 +53,14 @@ public sealed class ResultSetProcTests
             Assert.True(info.RowCount >= 0, "row count should be non-negative");
         });
 
-        harness.Run("GenerateMockPackageMovementXML via raw EXEC text", cat, "Ado", () =>
+        harness.Run("GenerateMockPackageMovementXML via raw CALL text", cat, "Ado", () =>
         {
             // Raw EXEC (CommandType.Text), NOT CommandType.StoredProcedure. Forces
             // explicit REFCURSOR/transaction handling after PostgreSQL conversion.
             var info = ado.GenerateMockPackageMovementExec(serial);
             // ReturnedResultSet reflects HasRows, which may be false for an empty
             // result set (no matching med center) — both are valid here.
-            Assert.True(info.FieldCount >= 1, "EXEC result should expose at least one column");
+            Assert.True(info.FieldCount >= 1, "CALL result should expose at least one column");
             Assert.True(info.RowCount >= 0, "row count should be non-negative");
         });
 

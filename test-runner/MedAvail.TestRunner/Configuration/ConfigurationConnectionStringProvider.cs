@@ -1,11 +1,11 @@
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using Microsoft.Extensions.Configuration;
 using MedAvail.Common;
 
 namespace MedAvail.TestRunner.Configuration;
 
 /// <summary>
-/// Builds per-database connection strings from configuration.
+/// Builds per-database PostgreSQL connection strings from configuration.
 ///
 /// Values resolve through the standard configuration chain set up in Program.cs:
 /// appsettings.json (placeholders) -> user-secrets -> environment variables.
@@ -28,22 +28,31 @@ public sealed class ConfigurationConnectionStringProvider : IConnectionStringPro
         var server = Require(sql, "Server");
         var userId = Require(sql, "UserId");
         var password = Require(sql, "Password");
-        var port = sql.GetValue<int?>("Port") ?? 1433;
-        var trustCert = sql.GetValue<bool?>("TrustServerCertificate") ?? true;
+        var port = sql.GetValue<int?>("Port") ?? 5432;
 
         var databaseName = sql.GetSection("Databases")[database.ToString()]
             ?? throw new InvalidOperationException(
                 $"No database name configured for Sql:Databases:{database}.");
 
-        var builder = new SqlConnectionStringBuilder
+        var searchPath = database switch
         {
-            DataSource = $"{server},{port}",
-            InitialCatalog = databaseName,
-            UserID = userId,
+            MedAvailDatabase.Core => "medavaildb_dbo",
+            MedAvailDatabase.PackageManagement => "medavailpackagemanagementdb_dbo",
+            MedAvailDatabase.DataAcquisition => "medavaildb_dbo",
+            MedAvailDatabase.Auditing => "medavaildb_dbo",
+            _ => "public"
+        };
+
+        var builder = new NpgsqlConnectionStringBuilder
+        {
+            Host = server,
+            Port = port,
+            Database = databaseName,
+            Username = userId,
             Password = password,
-            TrustServerCertificate = trustCert,
+            SearchPath = searchPath,
             // keeps the sample responsive when the placeholder server is unreachable
-            ConnectTimeout = 15
+            Timeout = 15
         };
 
         return builder.ConnectionString;

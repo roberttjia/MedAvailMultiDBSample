@@ -10,7 +10,7 @@ namespace MedAvail.DataAccess.Ef6.Contexts
     /// existing DbConnection (owned by this context) so the connection string is
     /// supplied by the shared connection-string provider.
     /// </summary>
-    [DbConfigurationType(typeof(Ef6SqlServerConfiguration))]
+    [DbConfigurationType(typeof(Ef6NpgsqlConfiguration))]
     public class PackageManagementEf6Context : DbContext
     {
         public PackageManagementEf6Context(DbConnection connection, bool contextOwnsConnection)

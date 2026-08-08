@@ -54,9 +54,8 @@ public class PackageDefinitionEntity
     [Column("created_on")] public DateTime CreatedOn { get; set; }
     [Column("lot_code_source")] public int LotCodeSource { get; set; }
 
-    /// <summary>SQL Server rowversion (timestamp); EF concurrency token, DB-managed.</summary>
-    [Timestamp]
-    [Column("AuditID_MA")]
+    /// <summary>PostgreSQL bytea column (formerly SQL Server rowversion); mapped as plain byte[].</summary>
+    [Column("auditid_ma")]
     public byte[]? AuditId { get; set; }
 
     [Column("notes")] public string? Notes { get; set; }
